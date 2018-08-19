@@ -11,11 +11,7 @@ docker 容器通信是 docker 中最关键、最核心、最常用的功能。�
 
 # 准备
 
-准备工具 `hoojo/jib-hello` 是一个自定义的镜像，由Java语言开发，主要是测试环境变量中配置的URL 能否通过容器程序访问，避免通过`shell` 频繁操作。
-
-
-
-同时，准备一个测试脚本，内容如下：
+准备工具 `hoojo/jib-hello` 是一个自定义的镜像，由Java语言开发，主要是测试环境变量中配置的URL 能否通过容器程序访问，避免通过`shell` 频繁操作。同时，准备一个测试脚本，内容如下：
 
 ```sh
 $ cat ./test-scripts/test.sh
@@ -97,9 +93,10 @@ $ curl localhost:80
 ### 实现方式一，直接通过主机host访问
 
 ```yaml
-version: "3"
+$ cat docker-compose-default.yaml
 
 services:
+
   java_app:
     image: hoojo/jib-hello:1.0
     container_name: java_app_service
@@ -117,6 +114,12 @@ services:
     domainname: hoojo.com
     tty: true
     stdin_open: true
+    
+    environment:
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh"
 ```
 
 执行命令启动外部容器或应用 和 测试容器：
@@ -129,7 +132,26 @@ $ docker-compose -f container-assess-external/docker-compose-default.yaml up
 通过 Java 程序和 Ping  访问配置的URL发现 `localhost` 不能访问
 
 ```sh
-[ERROR] [example.App 87] Connect to localhost:8080 [localhost/127.0.0.1] failed: Connection refused (Connection refused)
+app_service | ===> ping http://192.168.99.100:80/
+app_service | Connecting to 192.168.99.100:80 (192.168.99.100:80)
+app_service | <html><body><h1>It works!</h1></body></html>
+-                    100% |*******************************|    45   0:00:00 ETA
+app_service |
+app_service |
+app_service | ===> ping http://192.168.99.100:8080/
+app_service | Connecting to 192.168.99.100:8080 (192.168.99.100:8080)
+app_service | <html><body><h1>It works!</h1></body></html>
+-                    100% |*******************************|    45   0:00:00 ETA
+app_service |
+app_service |
+app_service | ===> ping http://localhost:80/
+app_service | Connecting to localhost:80 (127.0.0.1:80)
+app_service | wget: can't connect to remote host (127.0.0.1): Connection refused
+app_service |
+app_service |
+app_service | ===> ping http://localhost:8080/
+app_service | Connecting to localhost:8080 (127.0.0.1:8080)
+app_service | wget: can't connect to remote host (127.0.0.1): Connection refused
 ```
 
 **小结**：直接通过主机IP地址进行外部容器访问，但 `localhost` 则不能访问外部容器或外部应用。
@@ -163,6 +185,11 @@ services:
     stdin_open: true
     
     network_mode: "host"
+    environment:
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh"
 ```
 
 执行命令进行启动服务和访问外部应用
@@ -348,7 +375,33 @@ services:
     stdin_open: true      
 ```
 
-由于容器采用 `ports`向外部暴露端口，这就提供了IP访问容器的方法。运行命令启动容器后，发现成功访问 `ENV_REQUEST_URL` 中配置的容器地址。
+运行结果如下：
+
+```sh
+shell_app_service | ===> ping http://192.168.99.100:81/
+shell_app_service | Connecting to 192.168.99.100:81 (192.168.99.100:81)
+external_httpd_service | 172.21.0.1 - - [19/Aug/2018:14:56:52 +0000] "GET / HTTP/1.1" 200 45
+shell_app_service | <html><body><h1>It works!</h1></body></html>
+-                    100% |*******************************|    45   0:00:00 ETA
+shell_app_service |
+shell_app_service |
+shell_app_service | ===> ping http://192.168.99.100:8081/
+shell_app_service | Connecting to 192.168.99.100:8081 (192.168.99.100:8081)
+shell_app_service | <html><body><h1>It works!</h1></body></html>
+-                    100% |*******************************|    45   0:00:00 ETA
+shell_app_service |
+shell_app_service |
+shell_app_service | ===> ping http://localhost:81/
+shell_app_service | Connecting to localhost:81 (127.0.0.1:81)
+shell_app_service | wget: can't connect to remote host (127.0.0.1): Connection refused
+shell_app_service |
+shell_app_service |
+shell_app_service | ===> ping http://localhost:8081/
+shell_app_service | Connecting to localhost:8081 (127.0.0.1:8081)
+shell_app_service | wget: can't connect to remote host (127.0.0.1): Connection refused
+```
+
+**小结**：由于容器采用 `ports`向外部暴露端口，这就提供了IP访问容器的方法。运行命令启动容器后，发现成功访问 `ENV_REQUEST_URL` 中配置的容器地址。很明显这种方式和之前的几乎一样，结果也是一致 `localhost` 访问容器失败。
 
 ### 方式2：`links` 方式，通过容器名称访问
 
