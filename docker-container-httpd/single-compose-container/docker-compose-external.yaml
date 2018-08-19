@@ -10,8 +10,8 @@ services:
     hostname: httpd.local
     domainname: hoojo.com
     ports:
-      - 80:80
-      - 8080:80
+      - 81:80
+      - 8081:80
       
   java_app:
     image: hoojo/jib-hello:1.0
@@ -20,9 +20,8 @@ services:
     domainname: hoojo.com
     
     environment:
-      # not access url
-      #- ENV_REQUEST_URL=http://localhost:80/,http://localhost:8080/
-      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/
+      # localhost access failure, 192.168.99.100 access success.
+      - ENV_REQUEST_URL=http://192.168.99.100:81/,http://192.168.99.100:8081/,http://localhost:81/,http://localhost:8081/
           
   shell_app:
     image: busybox:latest
@@ -30,4 +29,10 @@ services:
     hostname: app.local
     domainname: hoojo.com
     tty: true
-    stdin_open: true      
+    stdin_open: true     
+    
+    environment:
+      - ENV_REQUEST_URL=http://192.168.99.100:81/,http://192.168.99.100:8081/,http://localhost:81/,http://localhost:8081/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh" 
