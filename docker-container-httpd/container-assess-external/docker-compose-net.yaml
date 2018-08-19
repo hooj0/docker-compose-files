@@ -1,0 +1,17 @@
+# @changelog Added docker compose assess external app example
+
+version: "3"
+
+services:
+
+  app:
+    image: busybox:latest
+    container_name: app_service
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true
+    
+    # 使用与docker客户端--net参数相同的值
+    # 让当前服务容器拥有和主机应用的网络访问权限能力，在容器内部访问外部的应用，就像在本地访问本机的应用一样
+    network_mode: "host"
