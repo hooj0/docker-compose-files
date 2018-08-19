@@ -21,6 +21,25 @@ services:
     expose:
       - 80
       
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true      
+    
+    links:
+      - internal_httpd:external
+      - internal_httpd:internal
+      
+    environment:
+      - ENV_REQUEST_URL=http://external:80/,http://internal:80/,http://external_httpd:80/,http://internal_httpd:80/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh" 
+    
+        
   java_app:
     image: hoojo/jib-hello:1.0
     container_name: java_app
@@ -32,13 +51,7 @@ services:
       - internal_httpd:internal
       
     environment:
-      # 通过服务别名访问，成功访问
-      - ENV_REQUEST_URL=http://external:80/,http://internal:80/
+      # service alias access success.
+      - ENV_REQUEST_URL=http://external:80/,http://internal:80/,http://external_httpd:80/,http://internal_httpd:80/
     
-  shell_app:
-    image: busybox:latest
-    container_name: shell_app
-    hostname: app.local
-    domainname: hoojo.com
-    tty: true
-    stdin_open: true      
+  
