@@ -13,6 +13,34 @@ docker 容器通信是 docker 中最关键、最核心、最常用的功能。�
 
 准备工具 `hoojo/jib-hello` 是一个自定义的镜像，由Java语言开发，主要是测试环境变量中配置的URL 能否通过容器程序访问，避免通过`shell` 频繁操作。
 
+
+
+同时，准备一个测试脚本，内容如下：
+
+```sh
+$ cat ./test-scripts/test.sh
+
+#!/bin/sh
+
+echo "----------run test script-----------"
+
+echo "ENV_REQUEST_URL: ${ENV_REQUEST_URL}"
+
+OLD_IFS=$IFS
+IFS=","
+for requrl in ${ENV_REQUEST_URL}; do
+	echo
+	echo "===> ping ${requrl}"
+	#ping -c 1 url
+	wget $requrl -O -
+	echo
+done
+
+IFS=$OLD_IFS
+```
+
+
+
 # 外部应用访问容器
 
 **目标**：提供一个容器，暴露指定端口，外部应用可以通过容器所在主机IP地址能够访问到容器。
@@ -212,10 +240,19 @@ Connecting to localhost:8080 (127.0.0.1:8080)
 ```yaml
 $ cat docker-compose-pid.yaml
 
-version: "3"
-
 services:
 
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app_service
+    hostname: app.local
+    domainname: hoojo.com
+    
+    pid: "host"
+    environment:
+      # 192.168.99.100 access url success, localhost access url failure.
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
+      
   app:
     image: busybox:latest
     container_name: app_service
@@ -223,44 +260,39 @@ services:
     domainname: hoojo.com
     tty: true
     stdin_open: true
+    
+    environment:
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh" 
+    
     pid: "host"
 ```
 
 通过命令进行启动服务并进行测试访问外部应用
 
 ```sh
-$ docker attach app_service
-/ # wget localhost:8080 -S
-Connecting to localhost:8080 (127.0.0.1:8080)
-wget: can't connect to remote host (127.0.0.1): Connection refused
-
-/ # wget 127.0.0.1:8080 -S
-Connecting to 127.0.0.1:8080 (127.0.0.1:8080)
-wget: can't connect to remote host (127.0.0.1): Connection refused
-
-/ # wget 192.168.99.100:80 -S
-Connecting to 192.168.99.100:80 (192.168.99.100:80)
-  HTTP/1.1 200 OK
-  Date: Sun, 19 Aug 2018 07:38:13 GMT
-  Server: Apache/2.4.34 (Unix)
-  Last-Modified: Mon, 11 Jun 2007 18:53:14 GMT
-  ETag: "2d-432a5e4a73a80"
-  Accept-Ranges: bytes
-  Content-Length: 45
-  Connection: close
-  Content-Type: text/html
-
-/ # wget 192.168.99.100:8080 -S
-Connecting to 192.168.99.100:8080 (192.168.99.100:8080)
-  HTTP/1.1 200 OK
-  Date: Sun, 19 Aug 2018 07:41:38 GMT
-  Server: Apache/2.4.34 (Unix)
-  Last-Modified: Mon, 11 Jun 2007 18:53:14 GMT
-  ETag: "2d-432a5e4a73a80"
-  Accept-Ranges: bytes
-  Content-Length: 45
-  Connection: close
-  Content-Type: text/html
+app_service | ===> ping http://192.168.99.100:80/
+app_service | Connecting to 192.168.99.100:80 (192.168.99.100:80)
+app_service | <html><body><h1>It works!</h1></body></html>
+-                    100% |*******************************|    45   0:00:00 ETA
+app_service |
+app_service |
+app_service | ===> ping http://192.168.99.100:8080/
+app_service | Connecting to 192.168.99.100:8080 (192.168.99.100:8080)
+app_service | <html><body><h1>It works!</h1></body></html>
+-                    100% |*******************************|    45   0:00:00 ETA
+app_service |
+app_service |
+app_service | ===> ping http://localhost:80/
+app_service | Connecting to localhost:80 (127.0.0.1:80)
+app_service | wget: can't connect to remote host (127.0.0.1): Connection refused
+app_service |
+app_service |
+app_service | ===> ping http://localhost:8080/
+app_service | Connecting to localhost:8080 (127.0.0.1:8080)
+app_service | wget: can't connect to remote host (127.0.0.1): Connection refused
 ```
 
 **小结**：通过利用 `pid:"host"` 的设置，相当于打开容器与主机操作系统之间的**共享PID地址空间**。这样容器就相当于一个普通的应用暴露在主机指针，用户可以不通过docker 就可以操作容器的进程数据，这将丧失容器的所有隔离的效果。而且，此选项启动的容器**可以访问和主机中的其他容器，反之亦然**。这里在 `app_service` 容器内部不能使用 `localhost `去访问外部的程序，`localhost` 任然指向的是容器内部的IP，而不是当前宿主主机的IP。
