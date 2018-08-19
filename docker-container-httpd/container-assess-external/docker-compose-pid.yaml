@@ -1,0 +1,17 @@
+# @changelog Added docker compose assess external app example
+
+version: "3"
+
+services:
+
+  app:
+    image: busybox:latest
+    container_name: app_service
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true
+    
+    # 这将打开容器与主机操作系统之间的共享PID地址空间。
+    # 此选项启动的容器可以访问和主机的名称空间中的其他容器，反之亦然。
+    pid: "host"
