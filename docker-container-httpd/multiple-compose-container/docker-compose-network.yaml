@@ -1,0 +1,50 @@
+# @changelog Added docker compose external assess httpd service example
+
+version: "3"
+
+services:
+
+  external_httpd:
+    image: httpd
+    container_name: external_httpd_service
+    hostname: httpd.local
+    domainname: hoojo.com
+    ports:
+      - 80:80
+      - 8080:80
+    
+    networks:
+      default:
+        aliases:
+         - external_a
+         - external_b  
+      
+  internal_httpd:
+    image: httpd
+    container_name: internal_httpd_service
+    hostname: httpd.local
+    domainname: hoojo.com
+    expose:
+      - 80
+    networks:
+      default:
+        aliases:
+         - internal
+      
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app
+    hostname: app.local
+    domainname: hoojo.com
+    
+    environment:
+      # 成功访问
+      - ENV_REQUEST_URL=http://external_b:80/,http://external_a:80/,http://internal:80/
+    
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true      
