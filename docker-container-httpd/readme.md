@@ -57,9 +57,9 @@ $ curl localhost:80
 
 **预期**：通过在 `busybox` 内部，能够访问到任何联网的网络应用，包括其他机器设备上的 `docker` 容器或当前机器上的不在同一个 `compose`文件中的容器。
 
-**实现**：编写一个 `compose` 文件，利用 `busybox` 服务在其内部执行 shell 访问容器外部的应用，就像是在当前 `docker` 主机访问应用程序应用一样。
+**实现**：编写一个 `compose` 文件，利用 `busybox` 服务在其内部执行 `shell` 访问容器外部的应用 `192.168.99.100:8080 ` (一个独立的 `httpd` 容器，可以理解成 一个独立的应用 )，就像是在当前 `docker` 主机访问应用程序应用一样。
 
-### 实现方式1: 利用 `network_mode: "host"` 选项配置 
+### 实现方式一: 利用 `network_mode: "host"` 选项配置 
 
 ```yaml
 version: "3"
@@ -146,7 +146,7 @@ Connecting to localhost:8080 (127.0.0.1:8080)
 
 **小结**：通过利用 `network_mode: "host"` 对网络模式的设置，让当前服务容器拥有和**主机**应用的网络访问权限能力，在容器内部访问外部的应用，就像在本地访问本机的应用一样。可以把容器理解成一种本地的应用，它不再是具有docker网络的容器。这种模式是一种**不安全的模式**，它丧失了 docker 网络管理的控制，失去了docker 对网络的限制。
 
-### 实现方式2：利用 `pid: "host"` 选项配置
+### 实现方式二：利用 `pid: "host"` 选项配置
 
 ```yaml
 version: "3"
@@ -166,7 +166,7 @@ services:
 通过命令进行启动服务并进行测试访问外部应用
 
 ```sh
-$ winpty docker attach app_service
+$ docker attach app_service
 / # wget localhost:8080 -S
 Connecting to localhost:8080 (127.0.0.1:8080)
 wget: can't connect to remote host (127.0.0.1): Connection refused
