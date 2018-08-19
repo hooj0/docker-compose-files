@@ -38,10 +38,11 @@ services:
       - internal_httpd:internal
       
     environment:
-      - ENV_REQUEST_URL=http://external:80/,http://internal:80/,http://external_httpd:80/,http://internal_httpd:80/,http://external_httpd_service:80/,http://internal_httpd_service:80/
+      #- ENV_REQUEST_URL=http://external:80/,http://internal:80/,http://external_httpd:80/,http://internal_httpd:80/,http://external_httpd_service:80/,http://internal_httpd_service:80/
+      - ENV_REQUEST_URL=http://external:8080/,http://internal:80/,http://external_httpd:8080/,http://internal_httpd:80/,http://external_httpd_service:8080/,http://internal_httpd_service:80/
     volumes:
       - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
-    #command: "sh -c ./test-scripts/test.sh" 
+    command: "sh -c ./test-scripts/test.sh" 
     
         
   java_app:
@@ -60,6 +61,7 @@ services:
       
     environment:
       # service alias access success.
-      - ENV_REQUEST_URL=http://external:80/,http://internal:80/,http://external_httpd:80/,http://internal_httpd:80/,http://external_httpd_service:80/,http://internal_httpd_service:80/
+      #- ENV_REQUEST_URL=http://external:80/,http://internal:80/,http://external_httpd:80/,http://internal_httpd:80/,http://external_httpd_service:80/,http://internal_httpd_service:80/
+      - ENV_REQUEST_URL=http://external:8080/,http://internal:80/,http://external_httpd:8080/,http://internal_httpd:80/,http://external_httpd_service:8080/,http://internal_httpd_service:80/
     
   
