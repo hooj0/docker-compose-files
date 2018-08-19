@@ -1,4 +1,5 @@
 #!/bin/sh
+# @changelog container httpd ping test
 
 echo "----------run test script-----------"
 
