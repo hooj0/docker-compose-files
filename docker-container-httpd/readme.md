@@ -9,6 +9,10 @@ docker 容器通信是 docker 中最关键、最核心、最常用的功能。�
 
 以上是必须掌握的通信方式，在实际应用场景中会大量重现，下面会一一介绍容器通信的几种方式的配置方式。
 
+# 准备
+
+准备工具 `hoojo/jib-hello` 是一个自定义的镜像，由Java语言开发，主要是测试环境变量中配置的URL 能否通过容器程序访问，避免通过`shell` 频繁操作。
+
 # 外部应用访问容器
 
 **目标**：提供一个容器，暴露指定端口，外部应用可以通过容器所在主机IP地址能够访问到容器。
@@ -23,7 +27,6 @@ $ cat docker-compose-external.yaml
 version: "3"
 
 services:
-
   httpd:
     image: httpd
     container_name: httpd_service
@@ -59,13 +62,22 @@ $ curl localhost:80
 
 **实现**：编写一个 `compose` 文件，利用 `busybox` 服务在其内部执行 `shell` 访问容器外部的应用 `192.168.99.100:8080 ` (一个独立的 `httpd` 容器，可以理解成 一个独立的应用 )，就像是在当前 `docker` 主机访问应用程序应用一样。
 
-### 实现方式一: 利用 `network_mode: "host"` 选项配置 
+### 实现方式一，直接通过主机host访问
 
 ```yaml
 version: "3"
 
 services:
-
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app_service
+    hostname: app.local
+    domainname: hoojo.com
+    
+    environment:
+      # 192.168.99.100 access url success, localhost access url failure.
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
+      
   app:
     image: busybox:latest
     container_name: app_service
@@ -73,6 +85,40 @@ services:
     domainname: hoojo.com
     tty: true
     stdin_open: true
+```
+
+执行命令启动外部容器或应用 `docker-compose.exe -f external-access-container/docker-compose-external.yaml up -d`<br/>执行命令启动测试容器： `docker-compose.exe -f container-assess-external/docker-compose-default.yaml up`
+
+**小结**：直接通过主机IP地址进行外部容器访问，但 `localhost` 则不能访问外部容器或外部应用。
+
+### 实现方式二: 利用 `network_mode: "host"` 选项配置 
+
+```yaml
+$ cat docker-compose-net.yaml
+
+version: "3"
+
+services:
+
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app_service
+    hostname: app.local
+    domainname: hoojo.com
+    
+    network_mode: "host"
+    environment:
+      # 192.168.99.100 access url success, localhost access url success.
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
+      
+  app:
+    image: busybox:latest
+    container_name: app_service
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true
+    
     network_mode: "host"
 ```
 
@@ -80,7 +126,7 @@ services:
 
 ```sh
 # 启动程序
-$ docker-compose up -d
+$ docker-compose -f docker-compose-net.yaml up -d
 Starting app_service ... done
 
 # 查看当前主机ip
@@ -149,6 +195,8 @@ Connecting to localhost:8080 (127.0.0.1:8080)
 ### 实现方式二：利用 `pid: "host"` 选项配置
 
 ```yaml
+$ cat docker-compose-pid.yaml
+
 version: "3"
 
 services:
@@ -204,7 +252,7 @@ Connecting to 192.168.99.100:8080 (192.168.99.100:8080)
 
 # 容器和容器通信
 
-容器和容器通信方式有几种方式可以实现，他们都是在一个 compose 文件中或者 多个 compose 文件中的独立容器进行交互访问。在实际应用场景中，多个独立容器相互调用访问是很常见的情况。
+容器和容器通信方式有几种方式可以实现，他们都是在一个 `compose ` 文件中或者 多个 `compose` 文件中的独立容器进行交互访问。在实际应用场景中，多个独立容器相互调用访问是很常见的情况。
 
 ## 同一个编排文件中的容器通信
 
@@ -212,7 +260,52 @@ Connecting to 192.168.99.100:8080 (192.168.99.100:8080)
 
 **预期**：在 `app_service` 服务容器中，可以访问到独立容器 `httpd`。
 
-**实现**：在 
+**实现**：在 `docker-compose-external.yaml` 文件中利用 `app` 服务访问通过 `ports` 提供暴露接口的服务。
+
+### 方式1：通过宿主主机访问容器
+
+```yaml
+# @changelog Added docker singel compose external assess httpd service example
+
+version: "3"
+
+services:
+
+  external_httpd:
+    image: httpd
+    container_name: external_httpd_service
+    hostname: httpd.local
+    domainname: hoojo.com
+    ports:
+      - 80:80
+      - 8080:80
+      
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app_service
+    hostname: app.local
+    domainname: hoojo.com
+    
+    environment:
+      # localhost url access failure
+      #- ENV_REQUEST_URL=http://localhost:80/,http://localhost:8080/
+      # ip access success 
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/
+          
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app_service
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true      
+```
+
+由于容器采用 `ports`向外部暴露端口，这就提供了IP访问容器的方法。运行命令启动容器后，发现成功访问 `ENV_REQUEST_URL` 中配置的容器地址。
+
+### 方式2：`links` 方式，通过容器名称访问
+
+
 
 **总结**：
 
