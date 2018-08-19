@@ -19,6 +19,8 @@ services:
     hostname: app.local
     domainname: hoojo.com
     
+    depends_on:
+      - external_httpd
     environment:
       # localhost access failure, 192.168.99.100 access success.
       - ENV_REQUEST_URL=http://192.168.99.100:81/,http://192.168.99.100:8081/,http://localhost:81/,http://localhost:8081/
@@ -31,6 +33,8 @@ services:
     tty: true
     stdin_open: true     
     
+    depends_on:
+      - external_httpd
     environment:
       - ENV_REQUEST_URL=http://192.168.99.100:81/,http://192.168.99.100:8081/,http://localhost:81/,http://localhost:8081/
     volumes:
