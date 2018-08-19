@@ -40,7 +40,11 @@ services:
 $ docker run -p 80:80 -p 8080:80 --name httpd_service httpd:latest 
 ```
 
-执行命令 `docker-compose -f docker-compose-external.yaml up` 启动服务。
+执行命令启动服务
+
+```sh
+$ docker-compose -f docker-compose-external.yaml up 
+```
 
 通过 `curl` 能够成功访问容器内部的 `httpd` 访问：
 
@@ -87,7 +91,18 @@ services:
     stdin_open: true
 ```
 
-执行命令启动外部容器或应用 `docker-compose.exe -f external-access-container/docker-compose-external.yaml up -d`<br/>执行命令启动测试容器： `docker-compose.exe -f container-assess-external/docker-compose-default.yaml up`
+执行命令启动外部容器或应用 和 测试容器：
+
+```sh
+$ docker-compose -f external-access-container/docker-compose-external.yaml up -d
+$ docker-compose -f container-assess-external/docker-compose-default.yaml up
+```
+
+通过 Java 程序和 Ping  访问配置的URL发现 `localhost` 不能访问
+
+```sh
+[ERROR] [example.App 87] Connect to localhost:8080 [localhost/127.0.0.1] failed: Connection refused (Connection refused)
+```
 
 **小结**：直接通过主机IP地址进行外部容器访问，但 `localhost` 则不能访问外部容器或外部应用。
 
