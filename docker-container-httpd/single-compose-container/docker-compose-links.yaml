@@ -1,4 +1,4 @@
-# @changelog Added docker compose external assess httpd service example
+# @changelog Added docker compose singel file assess httpd service example
 
 version: "3"
 
@@ -29,17 +29,19 @@ services:
     tty: true
     stdin_open: true      
     
-    depends_on:
-      - external_httpd
-      - internal_httpd
-      
     links:
-      - internal_httpd:external
+      - external_httpd:external
       - internal_httpd:internal
-      
     environment:
-      #- ENV_REQUEST_URL=http://external:80/,http://internal:80/,http://external_httpd:80/,http://internal_httpd:80/,http://external_httpd_service:80/,http://internal_httpd_service:80/
-      - ENV_REQUEST_URL=http://external:8080/,http://internal:80/,http://external_httpd:8080/,http://internal_httpd:80/,http://external_httpd_service:8080/,http://internal_httpd_service:80/
+      # access failure, Connection refused 
+      #- ENV_REQUEST_URL=http://external:8080/,http://external_httpd:8080/,http://external_httpd_service:8080/
+      
+      # access failure, wget: server returned error: HTTP/1.1 403 Forbidden
+      #- ENV_REQUEST_URL=http://external:80/,http://external_httpd:80/,http://external_httpd_service:80/
+
+      # access failure, wget: server returned error: HTTP/1.1 403 Forbidden
+      # wget: bad address 'internal_httpd_service:80'
+      - ENV_REQUEST_URL=http://internal:80/,http://internal_httpd:80/,http://internal_httpd_service:80/
     volumes:
       - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
     command: "sh -c ./test-scripts/test.sh" 
@@ -51,17 +53,19 @@ services:
     hostname: app.local
     domainname: hoojo.com
     
-    depends_on:
-      - external_httpd
-      - internal_httpd
-      
     links:
-      - internal_httpd:external
+      - external_httpd:external
       - internal_httpd:internal
-      
+    volumes:
+      - /var/log4j:/var/log4j  
     environment:
-      # service alias access success.
-      #- ENV_REQUEST_URL=http://external:80/,http://internal:80/,http://external_httpd:80/,http://internal_httpd:80/,http://external_httpd_service:80/,http://internal_httpd_service:80/
-      - ENV_REQUEST_URL=http://external:8080/,http://internal:80/,http://external_httpd:8080/,http://internal_httpd:80/,http://external_httpd_service:8080/,http://internal_httpd_service:80/
+      # access failure, Connection refused, 
+      #- ENV_REQUEST_URL=http://external:8080/,http://external_httpd:8080/,http://external_httpd_service:8080/
+      
+      # access success, successfully routed
+      #- ENV_REQUEST_URL=http://external:80/,http://external_httpd:80/,http://external_httpd_service:80/
+      
+      # access success
+      - ENV_REQUEST_URL=http://internal:80/,http://internal_httpd:80/,http://internal_httpd_service:80/
     
   
