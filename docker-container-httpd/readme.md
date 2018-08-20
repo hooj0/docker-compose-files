@@ -1049,7 +1049,11 @@ $ docker-compose -f multiple-compose-container/networks-alias/docker-compose-net
 
 **总结**：通过将容器都加入到同一个网络中，相当于把这些容器都联通。这样通过网络服务的别名、容器名称、服务名称，都能够访问到容器本身的内部端口，而非暴露在外部的端口。
 
-
+# 问题清单
++ 1、hostname、domain 会导致 shell 无法通过容器或服务、网络别名访问容器，进行通信
++ 2、通过容器名称、服务名称或网络别名访问容器的时候，需要注意命名，只能出现小写字母、数字、- 进行组合，不能出现其他字符。
+	参考：https://en.wikipedia.org/wiki/Hostname
+	
 
 
 
