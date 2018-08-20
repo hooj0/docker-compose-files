@@ -1,0 +1,47 @@
+# @changelog Added docker compose multiple files assess httpd service example
+
+version: "3"
+
+services:
+
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app
+    hostname: app.local
+    domainname: hoojo.com
+    
+    external_links:
+      - internal_httpd_service
+      - external_httpd_service
+      - external_httpd_service:external
+      
+    environment:
+      # ports 8080 access failure, expose 80 access success.
+      #- ENV_REQUEST_URL=http://internal_httpd_service:80/,http://external_httpd_service:8080/,http://external:8080/
+      
+      # access successful
+      - ENV_REQUEST_URL=http://external_httpd_service:80/,http://external:80/
+    
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true     
+    
+    external_links:
+      - internal_httpd_service
+      - external_httpd_service
+      - external_httpd_service:external
+      
+    environment:
+      # internal_httpd_service --> wget: server returned error: HTTP/1.1 403 Forbidden
+      # external* --> access failure.
+      #- ENV_REQUEST_URL=http://internal_httpd_service:80/,http://external_httpd_service:8080/,http://external:8080/
+      
+      # wget: server returned error: HTTP/1.1 403 Forbidden
+      - ENV_REQUEST_URL=http://external_httpd_service:80/,http://external:80/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh"  
