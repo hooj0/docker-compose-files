@@ -1017,7 +1017,7 @@ services:
     ports:
       - 8080:80
     networks:
-      my-net:
+      common-net:
         aliases:
          - external-a
          - external-b  
@@ -1030,26 +1030,84 @@ services:
     expose:
       - 80
     networks:
-      my-net:
+      common-net:
         aliases:
          - internal
+
+networks:
+  common-net:
+    external:
+      name: my-net 
 ```
-
-
 
 服务调用方：
 
+```yaml
+$ cat docker-compose-network.yaml
 
+services:
+
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app
+    hostname: app.local
+    domainname: hoojo.com
+    
+    networks:
+      - common-net
+    environment:
+    
+    # NETWORK ALIAS ACCESS
+      # access successful
+      - ENV_REQUEST_URL=http://external-b:80/,http://external-a:80/,http://internal:80/
+      
+    # CONTAINER NAME ACCESS
+      # access successful
+      - ENV_REQUEST_URL=http://external_httpd_service:80/,http://internal_httpd_service:80/  
+
+    # SERVICE NAME ACCESS
+      # access successful
+      - ENV_REQUEST_URL=http://external_httpd:80/,http://internal_httpd:80/  
+    
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true      
+    
+    networks:
+      - common-net
+    environment:
+      # NETWORK ALIAS ACCESS
+      - ENV_REQUEST_URL=http://external-b:80/,http://external-a:80/,http://internal:80/
+      
+      # CONTAINER NAME ACCESS
+      - ENV_REQUEST_URL=http://external_httpd_service:80/,http://internal_httpd_service:80/
+      
+      # SERVICE NAME ACCESS
+      - ENV_REQUEST_URL=http://external_httpd:80/,http://internal_httpd:80/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh"
+    
+networks:
+  common-net:
+    external:
+      name: my-net 
+```
 
 运行命令启动服务：
 
 ```sh
 $ docker network create my-net
 
-
+$ docker-compose -f multiple-compose-container/networks-alias/docker-compose-httpd.yaml up -d
+$ docker-compose -f multiple-compose-container/networks-alias/docker-compose-network.yaml up
 ```
 
-
+**总结**：通过将容器都加入到同一个网络中，相当于把这些容器都联通。这样通过网络服务的别名、容器名称、服务名称，都能够访问到容器本身的内部端口，而非暴露在外部的端口。
 
 
 
