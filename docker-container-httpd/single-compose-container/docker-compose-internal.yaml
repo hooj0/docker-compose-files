@@ -28,8 +28,14 @@ services:
     domainname: hoojo.com
     
     environment:
-      # http://external_httpd:8080 access failure, 由于是内部调用，只能访问内部的接口，而不是指向外部的接口
-      - ENV_REQUEST_URL=http://external_httpd:80/,http://external_httpd:8080/,http://internal_httpd:80/
+      # SERVICE NAME
+      # http://external_httpd:8080 access failure, Connect to external_httpd:8080 [external_httpd/172.22.0.2] failed: Connection refused
+      # port 80 access successful
+      #- ENV_REQUEST_URL=http://external_httpd:80/,http://external_httpd:8080/,http://internal_httpd:80/
+      
+      # CONTAINER NAME
+      # access successful 
+      - ENV_REQUEST_URL=http://internal_httpd_service:80/,http://internal_httpd_service:80/
       
   shell_app:
     image: busybox:latest
@@ -37,4 +43,17 @@ services:
     hostname: app.local
     domainname: hoojo.com
     tty: true
-    stdin_open: true      
+    stdin_open: true     
+    
+    environment:
+      # SERVICE NAME
+      # wget: server returned error: HTTP/1.1 403 Forbidden
+      #- ENV_REQUEST_URL=http://external_httpd:80/,http://external_httpd:8080/,http://internal_httpd:80/
+
+      # CONTAINER NAME
+      # wget: server returned error: HTTP/1.1 403 Forbidden
+      - ENV_REQUEST_URL=http://internal_httpd_service:80/,http://internal_httpd_service:80/
+      
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh"  
