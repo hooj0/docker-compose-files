@@ -7,8 +7,6 @@ services:
   external_httpd:
     image: httpd
     container_name: external_httpd_service
-    hostname: httpd.local
-    domainname: hoojo.com
     ports:
       - 81:80
       - 8081:80
@@ -16,8 +14,6 @@ services:
   java_app:
     image: hoojo/jib-hello:1.0
     container_name: java_app_service
-    hostname: app.local
-    domainname: hoojo.com
     
     depends_on:
       - external_httpd
@@ -28,8 +24,6 @@ services:
   shell_app:
     image: busybox:latest
     container_name: shell_app_service
-    hostname: app.local
-    domainname: hoojo.com
     tty: true
     stdin_open: true     
     
