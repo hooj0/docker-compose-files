@@ -7,8 +7,6 @@ services:
   java_app:
     image: hoojo/jib-hello:1.0
     container_name: java_app
-    hostname: app.local
-    domainname: hoojo.com
     
     external_links:
       - internal_httpd_service
@@ -25,8 +23,6 @@ services:
   shell_app:
     image: busybox:latest
     container_name: shell_app
-    hostname: app.local
-    domainname: hoojo.com
     tty: true
     stdin_open: true     
     
@@ -36,11 +32,8 @@ services:
       - external_httpd_service:external
       
     environment:
-      # internal_httpd_service --> wget: server returned error: HTTP/1.1 403 Forbidden
-      # external* --> access failure.
       #- ENV_REQUEST_URL=http://internal_httpd_service:80/,http://external_httpd_service:8080/,http://external:8080/
       
-      # wget: server returned error: HTTP/1.1 403 Forbidden
       - ENV_REQUEST_URL=http://external_httpd_service:80/,http://external:80/
     volumes:
       - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
