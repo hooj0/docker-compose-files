@@ -874,7 +874,7 @@ $ docker-compose -f multiple-compose-container/net-host/docker-compose-httpd.yam
 $ docker-compose -f multiple-compose-container/net-container/docker-compose-join.yaml up
 ```
 
-**总结**：`network_mode: "container:[container name/id]"`是加入容器的方式，这种方式只能每次只能加入一个容器进行链接，是一种被动的方式。通过在调用方加入到提供方的容器中，进行链接。相反，在提供方加入调用方，每次也只能加入一个。通过加入容器后，可以直接通过加入容器的名称进行调用容器服务进行通信。
+**总结**：`network_mode: "container:[container name/id]"`是加入容器的方式，这种方式只能每次只能加入一个容器进行链接，是一种被动的方式。通过在调用方加入到提供方的容器中，进行链接。相反，在提供方加入调用方，每次也只能加入一个。通过加入容器后，可以直接通过加入容器的名称进行调用容器服务进行通信。**这种方式不能和networks一起使用，适合默认就在同一个网络中或者在不同的文件中的配置**
 
 ### 方式4、`external_links` 方式，通过容器名称或别名访问外部容器
 
@@ -908,6 +908,8 @@ services:
     image: hoojo/jib-hello:1.0
     container_name: java_app
     
+    networks:
+      - net
     external_links:
       - internal_httpd_service
       - external_httpd_service
@@ -926,28 +928,40 @@ services:
     tty: true
     stdin_open: true     
     
+    networks:
+      - net
     external_links:
       - internal_httpd_service
       - external_httpd_service
       - external_httpd_service:external
       
-    environment:      
+    environment:
       #- ENV_REQUEST_URL=http://internal_httpd_service:80/,http://external_httpd_service:8080/,http://external:8080/
       
       - ENV_REQUEST_URL=http://external_httpd_service:80/,http://external:80/
     volumes:
       - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
     command: "sh -c ./test-scripts/test.sh"  
+
+# 这就是使用了 provider/httpd 提供的默认网络
+networks:
+  net:
+    external:
+      name: provider_default  
 ```
 
 启动服务：
 
 ```sh
-$ docker-compose -f multiple-compose-container/external-links/docker-compose-httpd.yaml up -d
+# 将文件放置不同文件夹中，这样系统生成的网络就会不一样，导致在不同的网络中
+$ docker-compose -f multiple-compose-container/external-links/provider/docker-compose-httpd.yaml up -d
+# 会显示网络 provider_default
+$ docker network ls
+# 在docker-compose-links.yaml使用外部网络 provider_default
 $ docker-compose -f multiple-compose-container/external-links/docker-compose-links.yaml up
 ```
 
-**总结**：`external_links` 相当于将两个不同的文件合并为一个文件。通过链接的容器名称或者别名能成功访问容器**内部暴露的端口**进行通信。而暴露在外部的端口则不能正常访问！
+**总结**：`external_links` **必须将容器联通在至少一个相同的网络中**，使用 `external_links` 相当于将两个不同的文件合并为一个文件。通过链接的容器名称或者别名能成功访问容器**内部暴露的端口**进行通信。而暴露在外部的端口则不能正常访问！
 
 ### 方式5、`networks-alias` 进行加入相同网络进行通信
 
