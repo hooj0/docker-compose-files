@@ -7,8 +7,6 @@ services:
   java_app:
     image: hoojo/jib-hello:1.0
     container_name: java_app
-    hostname: app.local
-    domainname: hoojo.com
     
     environment:
       # ports 8080 access successful, expose 80 access failure.
@@ -17,8 +15,6 @@ services:
   shell_app:
     image: busybox:latest
     container_name: shell_app
-    hostname: app.local
-    domainname: hoojo.com
     tty: true
     stdin_open: true     
     
