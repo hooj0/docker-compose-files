@@ -12,7 +12,7 @@ services:
     
     pid: "host"
     environment:
-      # 192.168.99.100 access url success, localhost access url success.
+      # 192.168.99.100 access url success, localhost access url failure.
       - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
       
   app:
