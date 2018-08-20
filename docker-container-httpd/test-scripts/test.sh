@@ -11,7 +11,7 @@ for requrl in ${ENV_REQUEST_URL}; do
 	echo
 	echo "===> ping ${requrl}"
 	#ping -c 1 url
-	wget $requrl -O -
+	wget $requrl -T 3 -O -
 	echo
 done
 
