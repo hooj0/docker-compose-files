@@ -8,6 +8,8 @@ services:
     image: hoojo/jib-hello:1.0
     container_name: java_app
     
+    networks:
+      - net
     external_links:
       - internal_httpd_service
       - external_httpd_service
@@ -26,6 +28,8 @@ services:
     tty: true
     stdin_open: true     
     
+    networks:
+      - net
     external_links:
       - internal_httpd_service
       - external_httpd_service
@@ -38,3 +42,8 @@ services:
     volumes:
       - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
     command: "sh -c ./test-scripts/test.sh"  
+
+networks:
+  net:
+    external:
+      name: provider_default
