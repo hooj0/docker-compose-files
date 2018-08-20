@@ -13,7 +13,6 @@ services:
     environment:
       # access successful
       - ENV_REQUEST_URL=http://external_httpd_service:8080/
-      
       # access successful
       #- ENV_REQUEST_URL=http://internal_httpd_service:80/
     
@@ -26,10 +25,7 @@ services:
     network_mode: "container:external_httpd_service"
     #network_mode: "container:internal_httpd_service"
     environment:
-      # wget: server returned error: HTTP/1.1 403 Forbidden
       - ENV_REQUEST_URL=http://external_httpd_service:8080/
-      
-      #  wget: server returned error: HTTP/1.1 403 Forbidden
       #- ENV_REQUEST_URL=http://internal_httpd_service:80/
     volumes:
       - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
