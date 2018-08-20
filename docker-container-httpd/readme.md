@@ -709,7 +709,7 @@ services:
 启动服务程序：
 
 ```sh
-$ docker-compose -f multiple-compose-container/ip-host/docker-compose-httpd.yaml up -d
+$ docker-compose -f multiple-compose-container/ip-host/provider/docker-compose-httpd.yaml up -d
 $ docker-compose -f multiple-compose-container/ip-host/docker-compose-host.yaml up
 ```
 
@@ -791,7 +791,7 @@ services:
 启动服务：
 
 ```sh
-$ docker-compose -f multiple-compose-container/net-host/docker-compose-httpd.yaml up -d
+$ docker-compose -f multiple-compose-container/net-host/provider/docker-compose-httpd.yaml up -d
 $ docker-compose -f multiple-compose-container/net-host/docker-compose-net.yaml up
 ```
 
@@ -1057,7 +1057,7 @@ networks:
 ```sh
 $ docker network create my-net
 
-$ docker-compose -f multiple-compose-container/networks-alias/docker-compose-httpd.yaml up -d
+$ docker-compose -f multiple-compose-container/networks-alias/provider/docker-compose-httpd.yaml up -d
 $ docker-compose -f multiple-compose-container/networks-alias/docker-compose-network.yaml up
 ```
 
