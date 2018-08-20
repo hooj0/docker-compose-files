@@ -7,7 +7,7 @@ services:
   httpd:
     image: httpd
     container_name: httpd_service
-    hostname: httpd.local
+    hostname: app.local
     domainname: hoojo.com
     ports:
       - 80:80
