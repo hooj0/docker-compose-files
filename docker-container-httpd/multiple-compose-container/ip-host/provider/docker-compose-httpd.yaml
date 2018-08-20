@@ -6,16 +6,12 @@ services:
   external_httpd:
     image: httpd
     container_name: external_httpd_service
-    hostname: httpd.local
-    domainname: hoojo.com
     ports:
       - 8080:80
     
   internal_httpd:
     image: httpd
     container_name: internal_httpd_service
-    hostname: httpd.local
-    domainname: hoojo.com
     expose:
       - 80
     
