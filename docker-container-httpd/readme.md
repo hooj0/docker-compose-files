@@ -1,6 +1,6 @@
 # Docker Container 通信
 
-docker 容器通信是 docker 中最关键、最核心、最常用的功能。其中容器通信包含以下几种通信方式：
+`docker` 容器通信是 `docker` 中最关键、最核心、最常用的功能。其中容器通信包含以下几种通信方式：
 
 + 外部应用和容器进行通信，外部的应用调用容器进行通信
 + 容器和容器外部应用通信，容器内部调用容器外部的应用进行通信
@@ -11,7 +11,11 @@ docker 容器通信是 docker 中最关键、最核心、最常用的功能。�
 
 # 准备
 
-准备工具 `hoojo/jib-hello` 是一个自定义的镜像，由Java语言开发，主要是测试环境变量中配置的URL 能否通过容器程序访问，避免通过`shell` 频繁操作。同时，准备一个测试脚本，内容如下：
+准备工具 `hoojo/jib-hello` 是一个自定义的镜像，由Java语言开发，主要是测试环境变量中配置的URL 能否通过容器程序访问，避免通过`shell` 频繁操作。
+
+
+
+同时，准备一个测试脚本，内容如下：
 
 ```sh
 $ cat ./test-scripts/test.sh
@@ -80,7 +84,7 @@ $ curl localhost:80
 <html><body><h1>It works!</h1></body></html>
 ```
 
-**总结**：`ports` 可以将端口绑定到指定机器IP上，通过访问`IP：Port`的形式来提供外部应用访问容器服务。
+**总结**：`ports` 可以将端口发布公开到指定机器`IP`上，通过访问`IP：Port`的形式来提供外部应用访问容器服务。
 
 # 容器访问外部应用
 
@@ -90,7 +94,7 @@ $ curl localhost:80
 
 **实现**：编写一个 `compose` 文件，利用 `busybox` 服务在其内部执行 `shell` 访问容器外部的应用 `192.168.99.100:8080 ` (一个独立的 `httpd` 容器，可以理解成 一个独立的应用 )，就像是在当前 `docker` 主机访问应用程序应用一样。
 
-### 实现方式一，直接通过主机host访问
+## 方式1、直接通过主机`host`访问
 
 ```yaml
 $ cat docker-compose-default.yaml
@@ -156,7 +160,7 @@ app_service | wget: can't connect to remote host (127.0.0.1): Connection refused
 
 **小结**：直接通过主机IP地址进行外部容器访问，但 `localhost` 则不能访问外部容器或外部应用。
 
-### 实现方式二: 利用 `network_mode: "host"` 选项配置 
+## 方式2、 利用 `network_mode: "host"` 选项配置
 
 ```yaml
 $ cat docker-compose-net.yaml
@@ -262,7 +266,7 @@ Connecting to localhost:8080 (127.0.0.1:8080)
 
 **小结**：通过利用 `network_mode: "host"` 对网络模式的设置，让当前服务容器拥有和**主机**应用的网络访问权限能力，在容器内部访问外部的应用，就像在本地访问本机的应用一样。可以把容器理解成一种本地的应用，它不再是具有docker网络的容器。这种模式是一种**不安全的模式**，它丧失了 docker 网络管理的控制，失去了docker 对网络的限制。
 
-### 实现方式二：利用 `pid: "host"` 选项配置
+## 方式3、利用 `pid: "host"` 选项配置
 
 ```yaml
 $ cat docker-compose-pid.yaml
@@ -336,11 +340,9 @@ app_service | wget: can't connect to remote host (127.0.0.1): Connection refused
 
 **实现**：在 `docker-compose-external.yaml` 文件中利用 `app` 服务访问通过 `ports` 提供暴露接口的服务。
 
-### 方式1：通过宿主主机访问容器
+### 方式1、通过宿主主机`IP`访问容器
 
 ```yaml
-# @changelog Added docker singel compose external assess httpd service example
-
 version: "3"
 
 services:
@@ -375,6 +377,12 @@ services:
     stdin_open: true      
 ```
 
+启动服务：
+
+```sh
+ $ docker-compose -f single-compose-container/docker-compose-external.yaml up
+```
+
 运行结果如下：
 
 ```sh
@@ -403,11 +411,88 @@ shell_app_service | wget: can't connect to remote host (127.0.0.1): Connection r
 
 **小结**：由于容器采用 `ports`向外部暴露端口，这就提供了IP访问容器的方法。运行命令启动容器后，发现成功访问 `ENV_REQUEST_URL` 中配置的容器地址。很明显这种方式和之前的几乎一样，结果也是一致 `localhost` 访问容器失败。
 
-### 方式2：`links` 方式，通过容器名称访问
+### 方式2、`links` 方式，通过容器名称访问
 
+```yaml
+$ cat docker-compose-links.yaml
 
+version: "3"
+services:
 
-**总结**：
+  external_httpd:
+    image: httpd
+    container_name: external_httpd_service
+    hostname: httpd.local
+    domainname: hoojo.com
+    ports:
+      - 80:80
+      - 8080:80
+      
+  internal_httpd:
+    image: httpd
+    container_name: internal_httpd_service
+    hostname: httpd.local
+    domainname: hoojo.com
+    expose:
+      - 80
+      
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true      
+    
+    links:
+      - external_httpd:external
+      - internal_httpd:internal
+    environment:
+      # access failure, Connection refused 
+      #- ENV_REQUEST_URL=http://external:8080/,http://external_httpd:8080/,http://external_httpd_service:8080/
+      
+      # access failure, wget: server returned error: HTTP/1.1 403 Forbidden
+      #- ENV_REQUEST_URL=http://external:80/,http://external_httpd:80/,http://external_httpd_service:80/
+
+      # access failure, wget: server returned error: HTTP/1.1 403 Forbidden
+      # wget: bad address 'internal_httpd_service:80'
+      - ENV_REQUEST_URL=http://internal:80/,http://internal_httpd:80/,http://internal_httpd_service:80/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh" 
+    
+        
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app
+    hostname: app.local
+    domainname: hoojo.com
+    
+    links:
+      - external_httpd:external
+      - internal_httpd:internal
+    volumes:
+      - /var/log4j:/var/log4j  
+    environment:
+      # access failure, Connection refused, 
+      #- ENV_REQUEST_URL=http://external:8080/,http://external_httpd:8080/,http://external_httpd_service:8080/
+      
+      # access success, successfully routed
+      #- ENV_REQUEST_URL=http://external:80/,http://external_httpd:80/,http://external_httpd_service:80/
+      
+      # access success
+      - ENV_REQUEST_URL=http://internal:80/,http://internal_httpd:80/,http://internal_httpd_service:80/
+```
+
+启动服务：
+
+```sh
+$ docker-compose -f single-compose-container/docker-compose-links.yaml up
+```
+
+**总结**：`links`  是 docker 版本即将遗弃的功能，后期改用 `network` 的方式使用。`links` 可以将两个不同的容器进行链接，共享容器环境变量和网络，从而能进行网络上的通信。
+
+> **问题**：按照预期，应该在`shell_app`中能够访问到容器，但是一直出现 `HTTP/1.1 403 Forbidden` 这个错误。但`java_app` 可以成功路由到别名或容器、服务名指定的URL。这一点有点匪夷所思，这是一个问题，后期需要进行跟踪！
 
 
 
