@@ -1,0 +1,47 @@
+# @changelog Added docker compose external assess httpd service example
+
+version: "3"
+
+services:
+
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app
+    hostname: app.local
+    domainname: hoojo.com
+    
+    networks:
+      - common-net
+    environment:
+    
+    # NETWORK ALIAS ACCESS
+      # access successful
+      - ENV_REQUEST_URL=http://external-b:80/,http://external-a:80/,http://internal:80/
+      
+    # CONTAINER NAME ACCESS
+      # access successful
+      - ENV_REQUEST_URL=http://external_httpd_service:8080/,http://external_httpd_service:80/,http://internal_httpd_service:80/  
+    
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true      
+    
+    networks:
+      - common-net
+    environment:
+      # NETWORK ALIAS ACCESS
+      - ENV_REQUEST_URL=http://external-b:80/,http://external-a:80/,http://internal:80/
+      
+      - ENV_REQUEST_URL=http://external_httpd_service:8080/,http://external_httpd_service:80/,http://internal_httpd_service:80/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh"
+    
+networks:
+  common-net:
+    external:
+      name: my-net          
