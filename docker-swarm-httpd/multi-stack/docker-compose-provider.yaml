@@ -1,0 +1,25 @@
+# @changelog Added docker swarm custom network service example
+
+version: "3.6"
+
+networks:
+  net:
+    driver: overlay
+    attachable: true
+
+services:
+
+  external:
+    image: httpd
+    ports:
+      - 80:80
+      - 8080:80
+    networks:
+      - net
+      
+  internal:
+    image: httpd
+    expose:
+      - 80
+    networks:
+      - net
