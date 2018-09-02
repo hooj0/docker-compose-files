@@ -11,7 +11,6 @@ services:
 
   external:
     image: httpd
-    container_name: external_httpd_service
     ports:
       - 80:80
       - 8080:80
@@ -20,7 +19,6 @@ services:
       
   internal:
     image: httpd
-    container_name: internal_httpd_service
     expose:
       - 80
     networks:
