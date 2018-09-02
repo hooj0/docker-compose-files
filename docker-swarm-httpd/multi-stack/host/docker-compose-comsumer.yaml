@@ -14,6 +14,8 @@ services:
     environment:
       # access success
       - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://192.168.99.100:80/
+      # access failure
+      - ENV_REQUEST_URL=http://localhost:80/,http://localhost:8080/,http://localhost:80/
     
   shell_app:
     image: busybox:latest
@@ -25,7 +27,10 @@ services:
         delay: 5s
         max_attempts: 3
     environment:
+      # access success
       - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://192.168.99.100:80/
+      # access failure
+      - ENV_REQUEST_URL=http://localhost:80/,http://localhost:8080/,http://localhost:80/
       
     volumes:
       - "/mnt/docker-swarm-httpd/test-scripts:/test-scripts:ro"
