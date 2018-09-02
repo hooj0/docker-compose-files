@@ -1,11 +1,6 @@
-# @changelog Added docker swarm custom network service example
+# @changelog Added docker swarm host access service example
 
 version: "3.6"
-
-networks:
-  provider-net:
-    external: true
-    name: provider_net
 
 services:
 
@@ -16,17 +11,10 @@ services:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-    networks:
-      - provider-net
     environment:
-      # access failure
-      - ENV_REQUEST_URL=http://external:80/,http://external:8080/,http://internal:80/
-      # access inner port(80) successful, 8080 failure: Connection refused (Connection refused)
-      #- ENV_REQUEST_URL=http://tasks.external:80/,http://tasks.external:8080/,http://tasks.internal:80/
-      # access inner port(80) successful, 8080 failure: Connection refused (Connection refused)
-      #- ENV_REQUEST_URL=http://provider_external:80/,http://provider_external:8080/,http://provider_internal:80/
-      # access inner port(80) successful, 8080 failure: Connection refused (Connection refused)
-      #- ENV_REQUEST_URL=http://tasks.provider_external:80/,http://tasks.provider_external:8080/,http://tasks.provider_internal:80/
+      # access success
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://192.168.99.100:80/
+      - ENV_REQUEST_URL=http://localhost:80/,http://localhost:8080/,http://localhost:80/
     
   shell_app:
     image: busybox:latest
@@ -37,17 +25,10 @@ services:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-    networks:
-      - provider-net
     environment:
-      # failure
-      - ENV_REQUEST_URL=http://external:80/,http://external:80/,http://internal:80/
-      # access inner port(80) successful, 8080 failure: can't connect to remote host (10.0.0.4): Connection refused
-      #- ENV_REQUEST_URL=http://tasks.external:80/,http://tasks.external:8080/,http://tasks.internal:80/
-      # access inner port(80) successful, 8080 failure: can't connect to remote host (10.0.0.4): Connection refused
-      #- ENV_REQUEST_URL=http://provider_external:80/,http://provider_external:8080/,http://provider_internal:80/
-      # access inner port(80) successful, 8080 failure: can't connect to remote host (10.0.0.4): Connection refused
-      #- ENV_REQUEST_URL=http://tasks.provider_external:80/,http://tasks.provider_external:8080/,http://tasks.provider_internal:80/
+      # access success
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://192.168.99.100:80/
+      - ENV_REQUEST_URL=http://localhost:80/,http://localhost:8080/,http://localhost:80/
       
     volumes:
       - "/mnt/docker-swarm-httpd/test-scripts:/test-scripts:ro"
