@@ -1,4 +1,4 @@
-# @changelog Added docker swarm custom network service example
+# @changelog Added docker swarm network alias name service example
 
 version: "3.6"
 
