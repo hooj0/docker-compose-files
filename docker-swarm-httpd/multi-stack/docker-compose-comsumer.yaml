@@ -19,7 +19,7 @@ services:
     networks:
       - provider-net
     environment:
-      # access failure
+      # access inner port(80) successful, 8080 failure: Connection refused (Connection refused)
       - ENV_REQUEST_URL=http://external:80/,http://external:8080/,http://internal:80/
       # access inner port(80) successful, 8080 failure: Connection refused (Connection refused)
       #- ENV_REQUEST_URL=http://tasks.external:80/,http://tasks.external:8080/,http://tasks.internal:80/
@@ -40,7 +40,7 @@ services:
     networks:
       - provider-net
     environment:
-      # access failure
+      # access inner port(80) successful, 8080 failure: can't connect to remote host (10.0.0.4): Connection refused
       - ENV_REQUEST_URL=http://external:80/,http://external:8080/,http://internal:80/
       # access inner port(80) successful, 8080 failure: can't connect to remote host (10.0.0.4): Connection refused
       #- ENV_REQUEST_URL=http://tasks.external:80/,http://tasks.external:8080/,http://tasks.internal:80/
