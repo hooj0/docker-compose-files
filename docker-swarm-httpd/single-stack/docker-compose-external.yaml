@@ -1,0 +1,47 @@
+# @changelog Added docker swarm external assess httpd service example
+
+version: "3.6"
+
+services:
+
+  external_httpd:
+    image: httpd
+    container_name: external_httpd_service
+    ports:
+      - 81:80
+      - 8081:80
+      
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app_service
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    depends_on:
+      - external_httpd
+    environment:
+      # localhost access failure: wget: can't connect to remote host (127.0.0.1): Connection refused 
+      # 192.168.99.100 access success.
+      - ENV_REQUEST_URL=http://192.168.99.100:81/,http://192.168.99.100:8081/,http://localhost:81/,http://localhost:8081/
+          
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app_service
+    tty: true
+    stdin_open: true     
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    depends_on:
+      - external_httpd
+    environment:
+      # localhost access failure: wget: can't connect to remote host (127.0.0.1): Connection refused 
+      # 192.168.99.100 access success.
+      - ENV_REQUEST_URL=http://192.168.99.100:81/,http://192.168.99.100:8081/,http://localhost:81/,http://localhost:8081/
+    volumes:
+      - "/mnt/docker-swarm-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh" 
