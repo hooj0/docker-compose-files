@@ -1,0 +1,95 @@
+version: '3.6'
+
+services:
+  zoo1:
+    image: zookeeper
+    restart: always
+    hostname: zoo1
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == dev-010
+      restart_policy:
+        condition: on-failure
+    ports:
+      - target: 2181
+        published: 2181
+        protocol: tcp
+        mode: host
+      - target: 2888
+        published: 2888
+        protocol: tcp
+        mode: host
+      - target: 3888
+        published: 3888
+        protocol: tcp
+        mode: host
+    extra_hosts:
+      - "dev-010:192.168.33.71"
+      - "dev-020:192.168.33.72"
+      - "dev-040:192.168.33.74"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=dev-020:2888:3888 server.3=dev-040:2888:3888
+
+  zoo2:
+    image: zookeeper
+    restart: always
+    hostname: zoo2
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == dev-020
+      restart_policy:
+        condition: on-failure
+    ports:
+      - target: 2181
+        published: 2181
+        protocol: tcp
+        mode: host
+      - target: 2888
+        published: 2888
+        protocol: tcp
+        mode: host
+      - target: 3888
+        published: 3888
+        protocol: tcp
+        mode: host
+    extra_hosts:
+      - "dev-010:192.168.33.71"
+      - "dev-020:192.168.33.72"
+      - "dev-040:192.168.33.74"
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=dev-010:2888:3888 server.2=0.0.0.0:2888:3888 server.3=dev-040:2888:3888
+
+  zoo3:
+    image: zookeeper
+    restart: always
+    hostname: zoo3
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == dev-040
+      restart_policy:
+        condition: on-failure
+    ports:
+      - target: 2181
+        published: 2181
+        protocol: tcp
+        mode: host
+      - target: 2888
+        published: 2888
+        protocol: tcp
+        mode: host
+      - target: 3888
+        published: 3888
+        protocol: tcp
+        mode: host
+    extra_hosts:
+      - "dev-010:192.168.33.71"
+      - "dev-020:192.168.33.72"
+      - "dev-040:192.168.33.74"
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=dev-010:2888:3888 server.2=dev-020:2888:3888 server.3=0.0.0.0:2888:3888
