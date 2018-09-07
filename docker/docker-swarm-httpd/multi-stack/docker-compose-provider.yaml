@@ -1,0 +1,28 @@
+# @changelog Added docker swarm custom network service example
+
+version: "3.6"
+
+networks:
+  net:
+    driver: overlay
+    attachable: true
+
+services:
+
+  external:
+    image: httpd
+    networks:
+      - net
+    deploy:
+      # dnsrr expose default port 80
+      endpoint_mode: vip  
+      
+  internal:
+    image: httpd
+    expose:
+      - 80
+    networks:
+      - net
+    deploy:
+      # dnsrr expose default port 80
+      endpoint_mode: vip  
