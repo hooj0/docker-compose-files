@@ -1,0 +1,49 @@
+# @changelog Added docker compose multiple files assess httpd service example
+
+version: "3"
+
+services:
+
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app
+    
+    networks:
+      - net
+    external_links:
+      - internal_httpd_service
+      - external_httpd_service
+      - external_httpd_service:external
+      
+    environment:
+      # ports 8080 access failure, expose 80 access success.
+      #- ENV_REQUEST_URL=http://internal_httpd_service:80/,http://external_httpd_service:8080/,http://external:8080/
+      
+      # access successful
+      - ENV_REQUEST_URL=http://external_httpd_service:80/,http://external:80/
+    
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    tty: true
+    stdin_open: true     
+    
+    networks:
+      - net
+    external_links:
+      - internal_httpd_service
+      - external_httpd_service
+      - external_httpd_service:external
+      
+    environment:
+      #- ENV_REQUEST_URL=http://internal_httpd_service:80/,http://external_httpd_service:8080/,http://external:8080/
+      
+      - ENV_REQUEST_URL=http://external_httpd_service:80/,http://external:80/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh"  
+
+networks:
+  net:
+    external:
+      name: provider_default
