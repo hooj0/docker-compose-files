@@ -1,9 +1,0 @@
-version: "3.6"
-
-services:
-  server:
-    image: busybox:latest
-    container_name: server.hoojo.com
-    hostname: dev-server
-    ports:
-      - 8081:80
