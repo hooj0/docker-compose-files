@@ -1,0 +1,15 @@
+# @changelog Added docker swarm host access service example
+
+version: "3.6"
+
+services:
+  external:
+    image: httpd
+    ports:
+      - 80:80
+      - 8080:80
+      
+  internal:
+    image: httpd
+    expose:
+      - 80
