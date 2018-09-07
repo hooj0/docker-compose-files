@@ -17,6 +17,20 @@ Kafka:
       - "kafka3:9092"
 ```
 
+在通过配置host情况下没有成功，kafka服务无法访问
+```yaml
+ Kafka:
+    Brokers:
+      #- "192.168.33.71:9092"
+      #- "192.168.33.72:9092"
+      # port host 模式下
+      # 本机orderer节点不能直接通过ip地址访问本机的kafka
+      # orderer 可以通过kafka2 服务名称访问，但不能通讯提示host找不到或者不能路由
+      # kafka2 = 192.168.33.73 ip
+      #- "kafka2:9092"
+      #- "192.168.33.74:9092"
+```
+
 ### `Orderer` 共识服务配置
 `orderer` 在管理节点上固定分布位置
 ```yaml
@@ -584,5 +598,4 @@ services:
         aliases:
         - kafka3.example.com
 ```
-也就是 Orderer 需要访问的kafka是global模式，在集群中的所有节点上都存在一组kafka集群服务。这样当前Orderer服务所在的机器上就可以直接链接本机的kafka集群。
 
