@@ -1,0 +1,53 @@
+# @changelog Added docker swarm network alias name service example
+
+version: "3.6"
+
+networks:
+  provider-net:
+    external: true
+    name: provider_net
+
+services:
+
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - provider-net
+    environment:
+      # access successful
+      - ENV_REQUEST_URL=http://external-b:80/,http://external-a:80/,http://internal:80/
+      # access successful
+      - ENV_REQUEST_URL=http://tasks.external-b:80/,http://tasks.external-a:80/,http://tasks.internal:80/
+      # access failure, Name does not resolve
+      - ENV_REQUEST_URL=http://provider_external-b:80/,http://provider_external-a:80/,http://provider_internal:80/
+      #- ENV_REQUEST_URL=http://tasks.provider_external-b:80/,http://tasks.provider_external-a:80/,http://tasks.provider_internal:80/
+    
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    tty: true
+    stdin_open: true      
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - provider-net
+    environment:
+      # access successful
+      - ENV_REQUEST_URL=http://external-b:80/,http://external-a:80/,http://internal:80/
+      # access successful
+      - ENV_REQUEST_URL=http://tasks.external-b:80/,http://tasks.external-a:80/,http://tasks.internal:80/
+      # access failure, wget: bad address
+      - ENV_REQUEST_URL=http://provider_external-b:80/,http://provider_external-a:80/,http://provider_internal:80/
+      #- ENV_REQUEST_URL=http://tasks.provider_external-b:80/,http://tasks.provider_external-a:80/,http://tasks.provider_internal:80/
+    volumes:
+      - "/mnt/docker-swarm-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh" 
