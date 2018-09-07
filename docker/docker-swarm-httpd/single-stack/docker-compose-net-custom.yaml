@@ -1,0 +1,73 @@
+# @changelog Added docker swarm custom network service example
+
+version: "3.6"
+
+networks:
+  net:
+    driver: overlay
+    attachable: true
+
+services:
+
+  external_httpd:
+    image: httpd
+    container_name: external_httpd_service
+    ports:
+      - 80:80
+      - 8080:80
+    networks:
+      net:
+        aliases:
+         - external-a
+         - external-b  
+      
+  internal_httpd:
+    image: httpd
+    container_name: internal_httpd_service
+    expose:
+      - 80
+    networks:
+      net:
+        aliases:
+         - internal
+      
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - net
+    environment:
+      # access successful
+      - ENV_REQUEST_URL=http://external-b:80/,http://external-a:80/,http://internal:80/
+      # access successful
+      #- ENV_REQUEST_URL=http://tasks.external-b:80/,http://tasks.external-a:80/,http://tasks.internal:80/
+      # access failure, Name does not resolve
+      #- ENV_REQUEST_URL=http://ext_external-b:80/,http://ext_external-a:80/,http://ext_internal:80/
+    
+  shell_app:
+    image: busybox:latest
+    container_name: shell_app
+    tty: true
+    stdin_open: true      
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - net
+    environment:
+      # access successful
+      - ENV_REQUEST_URL=http://external-b:80/,http://external-a:80/,http://internal:80/
+      # access successful
+      #- ENV_REQUEST_URL=http://tasks.external-b:80/,http://tasks.external-a:80/,http://tasks.internal:80/
+      # access failure, wget: bad address
+      #- ENV_REQUEST_URL=http://ext_external-b:80/,http://ext_external-a:80/,http://ext_internal:80/
+    volumes:
+      - "/mnt/docker-swarm-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh" 
