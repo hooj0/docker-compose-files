@@ -1,0 +1,81 @@
+version: '3.6'
+
+#-----------------------------------------------------------------------------------
+# orderer networks yaml
+#-----------------------------------------------------------------------------------
+networks:
+  net:
+    external:
+      name: orderer-zk-net
+
+#-----------------------------------------------------------------------------------
+# kafka & zookeeper service yaml
+#-----------------------------------------------------------------------------------
+services:
+  orderer:
+    container_name: orderer
+    command: orderer
+    hostname: orderer.example.com
+    environment:
+      GRPC_TRACE: all=true,
+      GRPC_VERBOSITY: debug
+      ORDERER_GENERAL_AUTHENTICATION_TIMEWINDOW: 3600s
+      ORDERER_GENERAL_GENESISFILE: /etc/hyperledger/configtx/genesis.block
+      ORDERER_GENERAL_GENESISMETHOD: file
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LOCALMSPDIR: /etc/hyperledger/msp/orderer/msp
+      ORDERER_GENERAL_LOCALMSPID: OrdererMSP
+      ORDERER_GENERAL_LOGLEVEL: debug
+      ORDERER_GENERAL_TLS_CERTIFICATE: /etc/hyperledger/msp/orderer/tls/server.crt
+      ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "false"
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/etc/hyperledger/msp/peerOrg1/msp/tlscacerts/tlsca.org1.foo.com-cert.pem,/etc/hyperledger/msp/peerOrg2/msp/tlscacerts/tlsca.org2.bar.com-cert.pem]'
+      ORDERER_GENERAL_TLS_ENABLED: "false"
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /etc/hyperledger/msp/orderer/tls/server.key
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/etc/hyperledger/msp/orderer/tls/ca.crt]'
+      
+      ORDERER_KAFKA_RETRY_SHORTINTERVAL: 1s
+      ORDERER_KAFKA_RETRY_SHORTTOTAL: 30s
+      ORDERER_KAFKA_VERBOSE: "true"
+    image: hyperledger/fabric-orderer:x86_64-1.1.0
+    ports:
+    - published: 7050
+      target: 7050
+    volumes:
+    - ./fabric-configs/v1.1/channel-artifacts:/etc/hyperledger/configtx:ro
+    - ./fabric-configs/v1.1/crypto-config/ordererOrganizations/simple.com/orderers/orderer.simple.com:/etc/hyperledger/msp/orderer:ro
+    - ./fabric-configs/v1.1/crypto-config/peerOrganizations/org1.foo.com/peers/peer0.org1.foo.com:/etc/hyperledger/msp/peerOrg1:ro
+    - ./fabric-configs/v1.1/crypto-config/peerOrganizations/org2.bar.com/peers/peer0.org2.bar.com:/etc/hyperledger/msp/peerOrg2:ro
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    deploy:
+      placement:
+        constraints:
+        - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+      restart_policy:
+        condition: on-failure
+    networks:
+      net:
+        aliases:
+        - orderer.example.com
+  
+  cli:
+    image: busybox:latest
+    container_name: cli.example.com
+    hostname: cli.example.com
+    tty: true
+    stdin_open: true
+    deploy:
+      placement:
+        constraints:
+        - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+      restart_policy:
+        condition: on-failure
+    networks:
+      net:
+        aliases:
+        - cli.example.com
