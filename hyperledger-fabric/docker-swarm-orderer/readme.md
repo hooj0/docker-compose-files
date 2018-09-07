@@ -1,4 +1,4 @@
-# `Orderer` 和 `Kafka` 达成`Docker Swarm`集群
+# `Orderer` 和 `Kafka` 完成 `Docker Swarm`集群
 
 Orderer和Kafka 进行集群完成Orderer排序共识机制，是 Hyperledger Ledger 超级账本区块链中重要的一环。但在Orderer和Kafka进行集群中问题很多，遇到了各种困难。导致困难的主要原因是**Orderer不能通过IP地址**直接访问Kafka集群，只能通过**服务的名称**或服务对应的**网络别名**访问集群进行通信。就目前而言，我在实际应用测试中是这样的情况，不排除还有其他的方式。
 
@@ -17,8 +17,8 @@ Kafka:
       - "kafka3:9092"
 ```
 
-### Orderer 共识服务配置
-orderer 在管理节点上固定分布位置
+### `Orderer` 共识服务配置
+`orderer` 在管理节点上固定分布位置
 ```yaml
 $ cat docker-swarm-orderer.yaml
 
@@ -87,21 +87,209 @@ services:
 
 ## 方案1：`kafka` 和 `Orderer` 同节点，`zookeeper` 分布不同节点
 > 利用 `placement constraints` 分布约束模式，让 `zookeeper` 分布在不同机器，`kafka` 和 `Orderer` 同一个机器。
-通过利用 `placement constraints` 分布约束策略，约束每个服务分布的节点位置，来控制Orderer服务访问的节点在同一个集群。而zookeeper可以分布在不同的机器上。
-要让kafka和orderer服务在同一个节点上，在 orderer 和 kafka 服务上增加如下关键配置：
+
+通过利用 `placement constraints` 分布约束策略，约束每个服务分布的节点位置，来控制`Orderer`服务访问的节点在同一个集群。而`zookeeper`可以分布在不同的机器上。
+要让`kafka`和`orderer`服务在同一个节点上，在 `orderer` 和 `kafka` 服务上增加如下关键配置：
 ```yaml
 placement:
     constraints:
       - node.role == manager
 ```
-这样orderer服务就可以直接通过本机的kafka进行通信完成共识排序。
+这样`orderer`服务就可以直接通过本机的`kafka`进行通信完成共识排序。
+
+完整代码如下：
+```yaml
+version: '3.6'
+
+#-----------------------------------------------------------------------------------
+# base config yaml
+#-----------------------------------------------------------------------------------
+x-hosts: &hosts
+  - "dev-010:192.168.33.71"
+  - "dev-020:192.168.33.72"
+  - "dev-030:192.168.33.73"
+  - "dev-040:192.168.33.74"
+  
+#-----------------------------------------------------------------------------------
+# base service yaml
+#-----------------------------------------------------------------------------------
+x-base-services:
+  zookeeper: &zookeeper-base
+    image: hyperledger/fabric-zookeeper${IMAGE_TAG_FABRIC_ZOOKEEPER}
+    ports:
+      - target: 2181
+        published: 2181
+        protocol: tcp
+        mode: host
+      - target: 2888
+        published: 2888
+        protocol: tcp
+        mode: host
+      - target: 3888
+        published: 3888
+        protocol: tcp
+        mode: host
+    deploy: &zookeeper-deploy-common
+      restart_policy:
+        condition: on-failure
+    extra_hosts: *hosts
+
+  kafka: &kafka-base
+    image: hyperledger/fabric-kafka${IMAGE_TAG_FABRIC_KAFKA}
+    environment: &kafka-env-common
+      KAFKA_MESSAGE_MAX_BYTES: 103809024 # 99 * 1024 * 1024 B
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 103809024 # 99 * 1024 * 1024 B
+      KAFKA_UNCLEAN_LEADER_ELECTION_ENABLE: "false"
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_LOG_RETENTION_MS: -1
+      KAFKA_ZOOKEEPER_CONNECT: dev-010:2181,dev-020:2181,dev-040:2181
+
+      #zookeeper.connection.timeout.ms
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 30000
+      #zookeeper.session.timeout.ms
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 30000
+    expose:
+      - 9092
+    deploy: &kafka-deploy-common
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+    extra_hosts: *hosts
+
+#-----------------------------------------------------------------------------------
+# kafka & zookeeper networks yaml
+#-----------------------------------------------------------------------------------
+networks:
+  net:
+    external:
+      name: orderer-zk-net
+    
+#-----------------------------------------------------------------------------------
+# zookeeper service yaml
+#-----------------------------------------------------------------------------------
+services:
+  zookeeper0:
+    hostname: zookeeper0.example.com
+    <<: *zookeeper-base
+    deploy:
+      <<: *zookeeper-deploy-common
+      placement:
+        constraints:
+          - node.hostname == dev-010
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=dev-020:2888:3888 server.3=dev-040:2888:3888
+    networks:
+      net:
+        aliases:
+        - zookeeper0.example.com
+
+  zookeeper1:
+    hostname: zookeeper1.example.com
+    <<: *zookeeper-base
+    deploy:
+      <<: *zookeeper-deploy-common
+      placement:
+        constraints:
+          - node.hostname == dev-020
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=dev-010:2888:3888 server.2=0.0.0.0:2888:3888 server.3=dev-040:2888:3888
+    networks:
+      net:
+        aliases:
+        - zookeeper1.example.com
+
+  zookeeper2:
+    hostname: zookeeper2.example.com
+    <<: *zookeeper-base
+    deploy:
+      <<: *zookeeper-deploy-common
+      placement:
+        constraints:
+          - node.hostname == dev-040
+    environment:
+      ZOO_MY_ID: 3  
+      ZOO_SERVERS: server.1=dev-010:2888:3888 server.2=dev-020:2888:3888 server.3=0.0.0.0:2888:3888
+    networks:
+      net:
+        aliases:
+        - zookeeper2.example.com
+
+#-----------------------------------------------------------------------------------
+# kafka service yaml
+#-----------------------------------------------------------------------------------
+  kafka0:
+    hostname: kafka0.example.com
+    <<: *kafka-base
+    deploy:
+      <<: *kafka-deploy-common
+    environment:
+      <<: *kafka-env-common
+      KAFKA_BROKER_ID: 0
+    networks:
+      net:
+        aliases:
+        - kafka0.example.com
+  
+  kafka1:
+    hostname: kafka1.example.com
+    <<: *kafka-base
+    deploy:
+      <<: *kafka-deploy-common
+    environment:
+      <<: *kafka-env-common
+      KAFKA_BROKER_ID: 1
+    networks:
+      net:
+        aliases:
+        - kafka1.example.com
+ 
+  kafka2:
+    hostname: kafka2.example.com
+    <<: *kafka-base
+    deploy:
+      <<: *kafka-deploy-common
+    environment:
+      <<: *kafka-env-common
+      KAFKA_BROKER_ID: 2
+    networks:
+      net:
+        aliases:
+        - kafka2.example.com
+ 
+  kafka3:
+    hostname: kafka3.example.com
+    <<: *kafka-base
+    deploy:
+      <<: *kafka-deploy-common
+    environment:
+      <<: *kafka-env-common
+      KAFKA_BROKER_ID: 3
+    networks:
+      net:
+        aliases:
+        - kafka3.example.com
+```
+
+## 方案2：kafka 全局分布，`zookeeper` 分布不同节点
+> 利用 `placement constraints` 将 `zookeeper` 分布在不同的机器上进行集群，而 `kafka` 进行 `deploy mode: global` 全局副本模式，每台集群上都有一组`kafka`集群。
+
+要让`kafka`服务在每个节点上，在 `kafka` 服务上增加如下关键配置：
+```yaml
+deploy: 
+  mode: global
+```
+
 
 完整代码如下：
 ```yaml
 
 ```
 
-## `zookeeper - placement constraints` & `kafka - deploy mode: global`
 
 ## `deploy mode: global` 模式
 也就是 Orderer 需要访问的kafka是global模式，在集群中的所有节点上都存在一组kafka集群服务。这样当前Orderer服务所在的机器上就可以直接链接本机的kafka集群。
