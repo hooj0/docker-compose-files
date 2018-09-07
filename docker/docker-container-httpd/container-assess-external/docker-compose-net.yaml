@@ -1,0 +1,31 @@
+# @changelog Added docker compose assess external app example
+
+version: "3"
+
+services:
+
+  java_app:
+    image: hoojo/jib-hello:1.0
+    container_name: java_app_service
+    hostname: app.local
+    domainname: hoojo.com
+    
+    network_mode: "host"
+    environment:
+      # 192.168.99.100 access url success, localhost access url success.
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
+      
+  app:
+    image: busybox:latest
+    container_name: app_service
+    hostname: app.local
+    domainname: hoojo.com
+    tty: true
+    stdin_open: true
+    
+    network_mode: "host"
+    environment:
+      - ENV_REQUEST_URL=http://192.168.99.100:80/,http://192.168.99.100:8080/,http://localhost:80/,http://localhost:8080/
+    volumes:
+      - "/mnt/docker-container-httpd/test-scripts:/test-scripts:ro"
+    command: "sh -c ./test-scripts/test.sh"
