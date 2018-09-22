@@ -22,7 +22,7 @@
 [docker swarm orderer & zookeeper & kafka service examples](./hyperledger-fabric/docker-swarm-orderer)
 
 ### docker-swarm-fabric solo mode
-[docker swarm orderer & zookeeper & kafka service examples](./hyperledger-fabric/docker-swarm-fabric-solo)
+[docker swarm orderer & zookeeper & kafka service solo-OrdererType examples](./hyperledger-fabric/docker-swarm-fabric-solo)
 
 ## kafka-zookeeper
 
