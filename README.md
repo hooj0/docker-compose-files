@@ -18,5 +18,16 @@
 ### docker-compose-orderer
 [docker compose orderer & zookeeper & kafka service examples](./hyperledger-fabric/docker-compose-orderer)
 
+### docker-swarm-orderer
+[docker swarm orderer & zookeeper & kafka service examples](./hyperledger-fabric/docker-swarm-orderer)
+
+### docker-swarm-fabric solo mode
+[docker swarm orderer & zookeeper & kafka service examples](./hyperledger-fabric/docker-swarm-fabric-solo)
+
 ## kafka-zookeeper
 
+### docker-swarm-zookeeper
+[docker swarm zookeeper service examples](./kafka-zookeeper/docker-swarm-zookeeper)
+
+### docker-swarm-kafka-zookeeper
+[docker swarm zookeeper & kafka service examples](./kafka-zookeeper/docker-swarm-kafka-zookeeper)
