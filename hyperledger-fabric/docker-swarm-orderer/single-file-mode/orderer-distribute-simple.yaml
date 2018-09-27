@@ -1,0 +1,162 @@
+version: '3.6'
+
+x-base-hosts: &extra-hosts
+  extra_hosts:
+    - "orderer.masget.com:192.168.33.73"
+    - "orderer:192.168.33.73"
+    
+    - "zookeeper0:192.168.33.71"
+    - "zookeeper0.masget.com:192.168.33.71"
+
+    - "kafka0:192.168.33.74"
+    - "kafka0.masget.com:192.168.33.74"
+    - "kafka1:192.168.33.72"
+    - "kafka1.masget.com:192.168.33.72"
+
+
+x-base-zookeeper-volumes: &zookeeper-volumes
+  volumes:
+    - ./zookeeper/conf/:/conf/
+    - ./zookeeper/data/:/data/
+    - ./zookeeper/datalog/:/datalog/
+    
+networks:
+  blockchain_net:
+    attachable: true
+    driver: overlay
+
+services:
+  orderer:
+    command: orderer
+    container_name: orderer.masget.com
+    environment:
+      GRPC_TRACE: all=true,
+      GRPC_VERBOSITY: debug
+      ORDERER_GENERAL_AUTHENTICATION_TIMEWINDOW: 3600s
+      ORDERER_GENERAL_GENESISFILE: /etc/hyperledger/configtx/genesis.block
+      ORDERER_GENERAL_GENESISMETHOD: file
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LOCALMSPDIR: /etc/hyperledger/msp/orderer/msp
+      ORDERER_GENERAL_LOCALMSPID: OrdererMSP
+      ORDERER_GENERAL_LOGLEVEL: debug
+      ORDERER_GENERAL_TLS_CERTIFICATE: /etc/hyperledger/msp/orderer/tls/server.crt
+      ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/etc/hyperledger/msp/peerOrg1/msp/tlscacerts/tlsca.org1.masget.com-cert.pem,
+        /etc/hyperledger/msp/peerOrg2/msp/tlscacerts/tlsca.org2.masget.com-cert.pem]'
+      ORDERER_GENERAL_TLS_ENABLED: "true"
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /etc/hyperledger/msp/orderer/tls/server.key
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/etc/hyperledger/msp/orderer/tls/ca.crt]'
+      ORDERER_KAFKA_RETRY_SHORTINTERVAL: 1s
+      ORDERER_KAFKA_RETRY_SHORTTOTAL: 60s
+      ORDERER_KAFKA_VERBOSE: "true"
+      
+      #ORDERER_GENERAL_ORDERERTYPE: solo
+      CONFIGTX_ORDERER_ORDERERTYPE: kafka
+      CONFIGTX_ORDERER_KAFKA_BROKERS: '[kafka0:9092,kafka1:9093]'
+    hostname: orderer.masget.com
+    image: hyperledger/fabric-orderer:x86_64-1.1.0
+    <<: *extra-hosts
+    deploy:
+      mode: replicated
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      blockchain_net:
+        aliases:
+        - orderer.masget.com
+    ports:
+    - published: 7050
+      target: 7050
+    volumes:
+    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/channel-artifacts:/etc/hyperledger/configtx:ro
+    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/ordererOrganizations/masget.com/orderers/orderer.masget.com:/etc/hyperledger/msp/orderer:ro
+    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/peerOrganizations/org1.masget.com/peers/one.org1.masget.com:/etc/hyperledger/msp/peerOrg1:ro
+    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/peerOrganizations/org2.masget.com/peers/three.org2.masget.com:/etc/hyperledger/msp/peerOrg2:ro
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+
+  zookeeper0:
+    container_name: zookeeper0
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.hostname == dev-010]
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zookeeper0:2888:3888
+    ports:
+    - '2181:2181'
+    - '2888:2888'
+    - '3888:3888'
+    hostname: zookeeper0.masget.com
+    image: hyperledger/fabric-zookeeper:x86_64-0.4.6
+    #<<: *zookeeper-volumes
+    networks:
+      blockchain_net:
+        aliases:
+        - zookeeper0.masget.com
+
+
+  kafka0:
+    container_name: kafka0
+    depends_on:
+    - zookeeper0
+    deploy:
+      #mode: global
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.hostname == dev-040]
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_MESSAGE_MAX_BYTES: 103809024
+      #KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 103809024
+      KAFKA_UNCLEAN_LEADER_ELECTION_ENABLE: "false"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper0:2181
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 10000
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 10000
+    ports:
+    - '9092:9092'
+    hostname: kafka0.masget.com
+    image: hyperledger/fabric-kafka:x86_64-0.4.6
+    <<: *extra-hosts
+    networks:
+      blockchain_net:
+        aliases:
+        - kafka0.masget.com
+        
+  kafka1:
+    container_name: kafka1
+    depends_on:
+    - zookeeper0
+    deploy:
+      #mode: global
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.hostname == dev-020]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_MESSAGE_MAX_BYTES: 103809024
+      #KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 103809024
+      KAFKA_UNCLEAN_LEADER_ELECTION_ENABLE: "false"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper0:2181
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 10000
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 10000
+    ports:
+    - '9093:9092'
+    hostname: kafka1.masget.com
+    image: hyperledger/fabric-kafka:x86_64-0.4.6
+    <<: *extra-hosts
+    networks:
+      blockchain_net:
+        aliases:
+        - kafka1.masget.com
