@@ -2,16 +2,16 @@ version: '3.6'
 
 x-base-hosts: &extra-hosts
   extra_hosts:
-    - "orderer.masget.com:192.168.33.73"
+    - "orderer.hoojo.com.com:192.168.33.73"
     - "orderer:192.168.33.73"
     
     - "zookeeper0:192.168.33.71"
-    - "zookeeper0.masget.com:192.168.33.71"
+    - "zookeeper0.hoojo.com.com:192.168.33.71"
 
     - "kafka0:192.168.33.74"
-    - "kafka0.masget.com:192.168.33.74"
+    - "kafka0.hoojo.com.com:192.168.33.74"
     - "kafka1:192.168.33.72"
-    - "kafka1.masget.com:192.168.33.72"
+    - "kafka1.hoojo.com.com:192.168.33.72"
 
 
 x-base-zookeeper-volumes: &zookeeper-volumes
@@ -28,7 +28,7 @@ networks:
 services:
   orderer:
     command: orderer
-    container_name: orderer.masget.com
+    container_name: orderer.hoojo.com.com
     environment:
       GRPC_TRACE: all=true,
       GRPC_VERBOSITY: debug
@@ -41,8 +41,8 @@ services:
       ORDERER_GENERAL_LOGLEVEL: debug
       ORDERER_GENERAL_TLS_CERTIFICATE: /etc/hyperledger/msp/orderer/tls/server.crt
       ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED: "true"
-      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/etc/hyperledger/msp/peerOrg1/msp/tlscacerts/tlsca.org1.masget.com-cert.pem,
-        /etc/hyperledger/msp/peerOrg2/msp/tlscacerts/tlsca.org2.masget.com-cert.pem]'
+      ORDERER_GENERAL_TLS_CLIENTROOTCAS: '[/etc/hyperledger/msp/peerOrg1/msp/tlscacerts/tlsca.org1.hoojo.com.com-cert.pem,
+        /etc/hyperledger/msp/peerOrg2/msp/tlscacerts/tlsca.org2.hoojo.com.com-cert.pem]'
       ORDERER_GENERAL_TLS_ENABLED: "true"
       ORDERER_GENERAL_TLS_PRIVATEKEY: /etc/hyperledger/msp/orderer/tls/server.key
       ORDERER_GENERAL_TLS_ROOTCAS: '[/etc/hyperledger/msp/orderer/tls/ca.crt]'
@@ -53,7 +53,7 @@ services:
       #ORDERER_GENERAL_ORDERERTYPE: solo
       CONFIGTX_ORDERER_ORDERERTYPE: kafka
       CONFIGTX_ORDERER_KAFKA_BROKERS: '[kafka0:9092,kafka1:9093]'
-    hostname: orderer.masget.com
+    hostname: orderer.hoojo.com.com
     image: hyperledger/fabric-orderer:x86_64-1.1.0
     <<: *extra-hosts
     deploy:
@@ -66,15 +66,15 @@ services:
     networks:
       blockchain_net:
         aliases:
-        - orderer.masget.com
+        - orderer.hoojo.com.com
     ports:
     - published: 7050
       target: 7050
     volumes:
     - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/channel-artifacts:/etc/hyperledger/configtx:ro
-    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/ordererOrganizations/masget.com/orderers/orderer.masget.com:/etc/hyperledger/msp/orderer:ro
-    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/peerOrganizations/org1.masget.com/peers/one.org1.masget.com:/etc/hyperledger/msp/peerOrg1:ro
-    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/peerOrganizations/org2.masget.com/peers/three.org2.masget.com:/etc/hyperledger/msp/peerOrg2:ro
+    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/ordererOrganizations/hoojo.com.com/orderers/orderer.hoojo.com.com:/etc/hyperledger/msp/orderer:ro
+    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/peerOrganizations/org1.hoojo.com.com/peers/one.org1.hoojo.com.com:/etc/hyperledger/msp/peerOrg1:ro
+    - /opt/gopath/src/github.com/hyperledger/fabric/network_resources/single/fabric-configs/v1.1/crypto-config/peerOrganizations/org2.hoojo.com.com/peers/three.org2.hoojo.com.com:/etc/hyperledger/msp/peerOrg2:ro
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
 
   zookeeper0:
@@ -92,13 +92,13 @@ services:
     - '2181:2181'
     - '2888:2888'
     - '3888:3888'
-    hostname: zookeeper0.masget.com
+    hostname: zookeeper0.hoojo.com.com
     image: hyperledger/fabric-zookeeper:x86_64-0.4.6
     #<<: *zookeeper-volumes
     networks:
       blockchain_net:
         aliases:
-        - zookeeper0.masget.com
+        - zookeeper0.hoojo.com.com
 
 
   kafka0:
@@ -123,13 +123,13 @@ services:
       KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 10000
     ports:
     - '9092:9092'
-    hostname: kafka0.masget.com
+    hostname: kafka0.hoojo.com.com
     image: hyperledger/fabric-kafka:x86_64-0.4.6
     <<: *extra-hosts
     networks:
       blockchain_net:
         aliases:
-        - kafka0.masget.com
+        - kafka0.hoojo.com.com
         
   kafka1:
     container_name: kafka1
@@ -153,10 +153,10 @@ services:
       KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 10000
     ports:
     - '9093:9092'
-    hostname: kafka1.masget.com
+    hostname: kafka1.hoojo.com.com
     image: hyperledger/fabric-kafka:x86_64-0.4.6
     <<: *extra-hosts
     networks:
       blockchain_net:
         aliases:
-        - kafka1.masget.com
+        - kafka1.hoojo.com.com
